@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Mediabay API dan playlist.m3u8 generatsiya qilish
-Har soatda API dan yangi kanallar olinadi va qo'shiladi
+Mediabay API dan barcha kanal ID-larini olish va ularning playlist-larini qo'shish
+Har soatda yangi playlist-lar olinadi
 """
 
 import requests
@@ -16,7 +16,7 @@ PLAYLIST_FILE = "playlist.m3u8"
 
 def get_channels():
     """
-    Mediabay API dan kanallarni olish
+    Mediabay API dan barcha kanallarni olish
     """
     try:
         print(f"[{datetime.now()}] API dan ma'lumot olinmoqda...")
@@ -39,6 +39,31 @@ def get_channels():
         print(f"✗ JSON tahlil xatosi")
         return []
 
+def get_channel_playlist(channel_id):
+    """
+    Har bir kanal ID uchun playlist URL-ni olish
+    """
+    try:
+        # Kanal ID-dan playlist URL yaratish
+        playlist_url = f"https://api.v1.mediabay.tv/v2/channel/{channel_id}/playlist.m3u8"
+        
+        # Yoki API-dan bevosita olish
+        channel_url = f"https://api.v1.mediabay.tv/v2/channels/{channel_id}"
+        
+        response = requests.get(channel_url, timeout=5)
+        response.raise_for_status()
+        
+        data = response.json()
+        if data.get('status') == 'ok':
+            channel_data = data.get('data', {})
+            playlist = channel_data.get('threadAddress') or playlist_url
+            return playlist
+        else:
+            return playlist_url
+    except Exception as e:
+        # Agar xato bo'lsa, default URL qaytarish
+        return f"https://api.v1.mediabay.tv/v2/channel/{channel_id}/playlist.m3u8"
+
 def initialize_playlist():
     """
     Playlist fayli bormi, yo'q qilsa yaratish
@@ -60,8 +85,8 @@ def initialize_playlist():
 
 def add_to_playlist(channels):
     """
-    Kanallarni playlist-ga qo'shish (append mode)
-    Har soatda yangi kanallar qo'shiladi
+    Barcha kanallarni playlist-ga qo'shish (append mode)
+    Har kanal uchun uning o'z playlist URL-ni qo'shish
     """
     if not channels:
         print("⚠ Qo'shish uchun kanal yo'q")
@@ -73,17 +98,20 @@ def add_to_playlist(channels):
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             f.write(f"\n# Yangilash: {current_time}\n")
             
-            for channel in channels:
+            for idx, channel in enumerate(channels, 1):
                 channel_id = channel.get('id', 'Unknown')
+                channel_name = channel.get('name', f'Kanal {channel_id}')
                 url = channel.get('threadAddress', '')
 
                 if url:
                     # Extended M3U format
-                    f.write(f"#EXTINF:-1, Kanal {channel_id} [{current_time}]\n")
+                    f.write(f"#EXTINF:-1, {channel_name} (ID: {channel_id})\n")
                     f.write(f"{url}\n")
-                    print(f"✓ Kanal {channel_id} qo'shildi")
+                    print(f"✓ [{idx}] Kanal {channel_id}: {channel_name}")
+                else:
+                    print(f"⚠ [{idx}] Kanal {channel_id}: URL topilmadi")
 
-        print(f"✓ {PLAYLIST_FILE} yangilandi ({len(channels)} kanal qo'shildi)")
+        print(f"\n✓ {PLAYLIST_FILE} yangilandi ({len(channels)} kanal qo'shildi)")
     except IOError as e:
         print(f"✗ Fayl yozish xatosi: {e}")
 
@@ -92,7 +120,7 @@ def main():
     Asosiy funksiya
     """
     print("="*60)
-    print("Mediabay Playlist Generator (Har Soatda Yangilash)")
+    print("Mediabay Playlist Generator (Barcha Kanallar)")
     print(f"Vaqti: {datetime.now()}")
     print(f"API: {API_URL}")
     print("="*60)
