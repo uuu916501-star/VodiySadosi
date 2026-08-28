@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Mediabay API dan playlist.m3u8 generatsiya qilish
-Thread 339 dan kanallarni oladi
+Mediabay API dan IPTV va Televizo ilovasiga mos playlist generatsiya qilish
+Thread 339 dan kanallarni oladi va extended M3U8 format ishlatadi
 """
 
 import requests
@@ -40,28 +40,55 @@ def get_channels():
         print(f"✗ JSON tahlil xatosi")
         return []
 
-def create_playlist(channels):
+def create_iptv_playlist(channels):
     """
-    Playlist fayli yaratish
+    IPTV va Televizo ilovasiga mos Extended M3U8 playlist yaratish
     """
     if not channels:
         print("⚠ Qo'shish uchun kanal yo'q")
         return False
 
     try:
-        with open(PLAYLIST_FILE, 'w') as f:
-            f.write("#EXTM3U\n")
+        with open(PLAYLIST_FILE, 'w', encoding='utf-8') as f:
+            # Extended M3U8 header
+            f.write("#EXTM3U url-tvg=\"\" tvg-shift=0\n")
             
-            for channel in channels:
+            for idx, channel in enumerate(channels, 1):
                 channel_id = channel.get('id', 'Unknown')
+                channel_name = channel.get('name', f'Kanal {channel_id}')
                 url = channel.get('threadAddress', '')
+                
+                # Ixtiyoriy maydonlar
+                logo = channel.get('logo', '')
+                group = channel.get('group', 'Boshqa')
 
                 if url:
-                    f.write(f"#EXTINF:-1, Kanal {channel_id}\n")
+                    # EXTINF line IPTV/Televizo ilovasiga mos
+                    extinf = f"#EXTINF:-1"
+                    
+                    # TVG ID qo'shish
+                    if channel_id:
+                        extinf += f' tvg-id="{channel_id}"'
+                    
+                    # Logo qo'shish
+                    if logo:
+                        extinf += f' tvg-logo="{logo}"'
+                    else:
+                        extinf += f' tvg-logo=""'
+                    
+                    # Guruh qo'shish
+                    if group:
+                        extinf += f' group-title="{group}"'
+                    
+                    # Kanal nomi
+                    extinf += f', {channel_name}\n'
+                    
+                    f.write(extinf)
                     f.write(f"{url}\n")
-                    print(f"✓ Kanal {channel_id} qo'shildi")
+                    print(f"✓ [{idx}] {channel_name} qo'shildi")
 
         print(f"\n✓ {PLAYLIST_FILE} yaratildi ({len(channels)} kanal)")
+        print(f"📱 IPTV ilovasiga (Televizo, IPTV Extreme, GSE IPTV va h.k.) import qiling")
         return True
     except IOError as e:
         print(f"✗ Fayl yozish xatosi: {e}")
@@ -71,22 +98,27 @@ def main():
     """
     Asosiy funksiya
     """
-    print("="*50)
-    print("Mediabay Playlist Generator")
+    print("="*60)
+    print("IPTV/Televizo Playlist Generator")
     print(f"Vaqti: {datetime.now()}")
-    print("="*50)
+    print("="*60)
 
     # Kanallarni olish
     channels = get_channels()
 
-    # Playlist yaratish
+    # IPTV playlist yaratish
     if channels:
-        create_playlist(channels)
-        print("\n✓ Bajarildi!")
+        create_iptv_playlist(channels)
+        print("\n✅ Bajarildi! Playlist ishga tayyoroti")
+        print(f"\n📋 Playlist manzili: {os.path.abspath(PLAYLIST_FILE)}")
+        print("💡 Maslahat: Playlist-ni IPTV ilovasiga qo'shish uchun:")
+        print("   1. IPTV ilovasini oching")
+        print("   2. 'Playlist qo'shish' yoki 'Import' tanglang")
+        print("   3. Fayl manzilini kiriting yoki fayl tanlang")
     else:
         print("\n✗ Hech qanday kanal topilmadi")
 
-    print("="*50)
+    print("="*60)
 
 if __name__ == "__main__":
     main()
