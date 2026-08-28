@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Mediabay API dan IPTV va Televizo ilovasiga mos playlist generatsiya qilish
-Thread 339 dan kanallarni oladi va extended M3U8 format ishlatadi
+Mediabay API dan playlist.m3u8 generatsiya qilish
+Har soatda API dan yangi kanallar olinadi va qo'shiladi
 """
 
 import requests
@@ -20,7 +20,6 @@ def get_channels():
     """
     try:
         print(f"[{datetime.now()}] API dan ma'lumot olinmoqda...")
-        print(f"URL: {API_URL}")
         response = requests.get(API_URL, timeout=10)
         response.raise_for_status()
 
@@ -40,83 +39,76 @@ def get_channels():
         print(f"✗ JSON tahlil xatosi")
         return []
 
-def create_iptv_playlist(channels):
+def initialize_playlist():
     """
-    IPTV va Televizo ilovasiga mos Extended M3U8 playlist yaratish
+    Playlist fayli bormi, yo'q qilsa yaratish
+    """
+    try:
+        if os.path.exists(PLAYLIST_FILE):
+            with open(PLAYLIST_FILE, 'r') as f:
+                content = f.read()
+                if '#EXTM3U' not in content:
+                    print(f"⚠ {PLAYLIST_FILE} qayta yaratilmoqda...")
+                    with open(PLAYLIST_FILE, 'w') as fw:
+                        fw.write("#EXTM3U\n")
+        else:
+            print(f"📝 {PLAYLIST_FILE} fayli yaratilmoqda...")
+            with open(PLAYLIST_FILE, 'w') as f:
+                f.write("#EXTM3U\n")
+    except IOError as e:
+        print(f"✗ Fayl xatosi: {e}")
+
+def add_to_playlist(channels):
+    """
+    Kanallarni playlist-ga qo'shish (append mode)
+    Har soatda yangi kanallar qo'shiladi
     """
     if not channels:
         print("⚠ Qo'shish uchun kanal yo'q")
-        return False
+        return
 
     try:
-        with open(PLAYLIST_FILE, 'w', encoding='utf-8') as f:
-            # Extended M3U8 header
-            f.write("#EXTM3U url-tvg=\"\" tvg-shift=0\n")
+        with open(PLAYLIST_FILE, 'a') as f:
+            # Vaqt bilan separator qo'shish
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            f.write(f"\n# Yangilash: {current_time}\n")
             
-            for idx, channel in enumerate(channels, 1):
+            for channel in channels:
                 channel_id = channel.get('id', 'Unknown')
-                channel_name = channel.get('name', f'Kanal {channel_id}')
                 url = channel.get('threadAddress', '')
-                
-                # Ixtiyoriy maydonlar
-                logo = channel.get('logo', '')
-                group = channel.get('group', 'Boshqa')
 
                 if url:
-                    # EXTINF line IPTV/Televizo ilovasiga mos
-                    extinf = f"#EXTINF:-1"
-                    
-                    # TVG ID qo'shish
-                    if channel_id:
-                        extinf += f' tvg-id="{channel_id}"'
-                    
-                    # Logo qo'shish
-                    if logo:
-                        extinf += f' tvg-logo="{logo}"'
-                    else:
-                        extinf += f' tvg-logo=""'
-                    
-                    # Guruh qo'shish
-                    if group:
-                        extinf += f' group-title="{group}"'
-                    
-                    # Kanal nomi
-                    extinf += f', {channel_name}\n'
-                    
-                    f.write(extinf)
+                    # Extended M3U format
+                    f.write(f"#EXTINF:-1, Kanal {channel_id} [{current_time}]\n")
                     f.write(f"{url}\n")
-                    print(f"✓ [{idx}] {channel_name} qo'shildi")
+                    print(f"✓ Kanal {channel_id} qo'shildi")
 
-        print(f"\n✓ {PLAYLIST_FILE} yaratildi ({len(channels)} kanal)")
-        print(f"📱 IPTV ilovasiga (Televizo, IPTV Extreme, GSE IPTV va h.k.) import qiling")
-        return True
+        print(f"✓ {PLAYLIST_FILE} yangilandi ({len(channels)} kanal qo'shildi)")
     except IOError as e:
         print(f"✗ Fayl yozish xatosi: {e}")
-        return False
 
 def main():
     """
     Asosiy funksiya
     """
     print("="*60)
-    print("IPTV/Televizo Playlist Generator")
+    print("Mediabay Playlist Generator (Har Soatda Yangilash)")
     print(f"Vaqti: {datetime.now()}")
+    print(f"API: {API_URL}")
     print("="*60)
+
+    # Playlist-ni tayyorlash
+    initialize_playlist()
 
     # Kanallarni olish
     channels = get_channels()
 
-    # IPTV playlist yaratish
+    # Playlist-ga qo'shish
     if channels:
-        create_iptv_playlist(channels)
-        print("\n✅ Bajarildi! Playlist ishga tayyoroti")
-        print(f"\n📋 Playlist manzili: {os.path.abspath(PLAYLIST_FILE)}")
-        print("💡 Maslahat: Playlist-ni IPTV ilovasiga qo'shish uchun:")
-        print("   1. IPTV ilovasini oching")
-        print("   2. 'Playlist qo'shish' yoki 'Import' tanglang")
-        print("   3. Fayl manzilini kiriting yoki fayl tanlang")
+        add_to_playlist(channels)
+        print("\n✓ Bajarildi!")
     else:
-        print("\n✗ Hech qanday kanal topilmadi")
+        print("\n✗ Hech qanday kanal qo'shilmadi")
 
     print("="*60)
 
