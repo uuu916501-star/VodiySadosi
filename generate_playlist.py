@@ -3,18 +3,17 @@
 """
 Mediabay API dan real-time ma'lumotlarni olub IPTV playlist generatsiya qilish
 API: https://api.v1.mediabay.tv/v2/channels/thread/339
-Har safar ichi API dan barcha kanallarni oladi va playlist yangilaydi (doimiy ishlaydigan)
+AsilTV uchun optimallashtirilgan playlist
 """
 
 import requests
 import json
 from datetime import datetime
 import os
-import time
 
 # Konfiguratsiya
 API_URL = "https://api.v1.mediabay.tv/v2/channels/thread/339"
-PLAYLIST_FILE = "playlist.m3u8"
+PLAYLIST_FILE = "AsilTV.m3u8"
 
 def get_channels_from_api():
     """
@@ -55,8 +54,8 @@ def get_channels_from_api():
 
 def create_iptv_playlist(channels):
     """
-    IPTV va Televizo ilovasiga mos Extended M3U8 playlist yaratish
-    Real-time ma'lumotlar asosida playlist yaratadi
+    AsilTV uchun IPTV playlist yaratish
+    Extended M3U8 formatida
     """
     if not channels:
         print("⚠ Qo'shish uchun kanal yo'q")
@@ -66,6 +65,7 @@ def create_iptv_playlist(channels):
         with open(PLAYLIST_FILE, 'w', encoding='utf-8') as f:
             # Extended M3U8 header
             f.write("#EXTM3U url-tvg=\"\" tvg-shift=0\n")
+            f.write(f"# AsilTV Playlist\n")
             f.write(f"# Yangilandi: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"# API: {API_URL}\n")
             f.write(f"# Jami kanallar: {len(channels)}\n\n")
@@ -78,12 +78,12 @@ def create_iptv_playlist(channels):
                 
                 # Ixtiyoriy maydonlar
                 logo = channel.get('logo', '')
-                group = channel.get('group', 'Boshqa')
+                group = channel.get('group', 'AsilTV')
                 duration = channel.get('duration', '-1')
                 tvg_id = channel.get('tvg_id', str(channel_id))
 
                 if url:
-                    # EXTINF line - IPTV/Televizo ilovasiga mos
+                    # EXTINF line
                     extinf = f"#EXTINF:{duration}"
                     
                     # TVG ID
@@ -94,8 +94,7 @@ def create_iptv_playlist(channels):
                         extinf += f' tvg-logo="{logo}"'
                     
                     # Guruh
-                    if group:
-                        extinf += f' group-title="{group}"'
+                    extinf += f' group-title="{group}"'
                     
                     # Kanal nomi
                     extinf += f', {channel_name}\n'
@@ -113,11 +112,10 @@ def create_iptv_playlist(channels):
 
 def main():
     """
-    Asosiy funksiya - doimiy ishlaydigan playlist
-    API dan real-time ma'lumotlarni oladi va playlist yangilaydi
+    Asosiy funksiya - AsilTV playlist generator
     """
     print("="*70)
-    print("🎬 IPTV/Televizo Doimiy Playlist Generator (Real-Time API)")
+    print("🎬 AsilTV Playlist Generator (Real-Time API)")
     print(f"⏰ Vaqti: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"📡 API: {API_URL}")
     print("="*70)
@@ -130,13 +128,13 @@ def main():
     if channels:
         create_iptv_playlist(channels)
         
-        print("\n✅ Bajarildi! Playlist ishga tayyoroti")
-        print(f"\n📋 Playlist fayli: {os.path.abspath(PLAYLIST_FILE)}")
+        print("\n✅ AsilTV Playlist tayyor!")
+        print(f"\n📋 Fayl: {os.path.abspath(PLAYLIST_FILE)}")
         print(f"🔄 Yangilash vaqti: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("\n💡 IPTV ilovasiga qo'shish:")
-        print("   1. IPTV ilovasini oching (Televizo, IPTV Extreme, GSE IPTV va h.k.)")
+        print("   1. IPTV ilovasini oching")
         print("   2. 'Playlist qo'shish' yoki 'Import' tanglang")
-        print("   3. Fayl manzilini kiriting yoki fayl tanlang")
+        print("   3. Fayl manzilini kiriting")
         print(f"\n📱 Raw URL: https://raw.githubusercontent.com/uuu916501-star/VodiySadosi/main/{PLAYLIST_FILE}")
         print(f"\n🔗 GitHub: https://github.com/uuu916501-star/VodiySadosi/blob/main/{PLAYLIST_FILE}")
     else:
