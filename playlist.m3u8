@@ -1,7 +1,1 @@
-#EXTM3U url-tvg="" tvg-shift=0
 
-# Thread 339 (2026-08-28 18:50:53)
-# API: https://api.v1.mediabay.tv/v2/channels/thread/339
-
-#EXTINF:-1 tvg-id="969" tvg-logo="" group-title="Radio", [339] Radio Echo
-https://st2.mediabay.tv/Radio_Echo/playlist.m3u8?token=7049dfd4048e6704834675a2c63568cc87bff54f-f0a7f69328c2f4309af68d3413fefa4b-1787953667-1787942867
